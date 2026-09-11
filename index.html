@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quanto sobra na venda?</title>
+<style>
+  :root {
+    --black: #111;
+    --gray-400: #9ca3af;
+    --gray-300: #d1d5db;
+    --gray-200: #e5e7eb;
+    --gray-500: #6b7280;
+    --red: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #fff;
+    color: var(--black);
+    display: flex;
+    justify-content: center;
+    padding: 24px;
+  }
+  .wrap { width: 100%; max-width: 420px; }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  h1 { font-size: 22px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .subtitle { font-size: 14px; color: var(--gray-500); margin: 4px 0 0; }
+
+  .help-btn {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    border: 1px solid var(--gray-300);
+    background: #fff;
+    color: var(--gray-500);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .help-btn:hover { border-color: var(--black); color: var(--black); }
+  .help-btn.active { background: var(--black); color: #fff; border-color: var(--black); }
+
+  .help-panel {
+    display: none;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 16px;
+    font-size: 12px;
+    color: #4b5563;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+  .help-panel.open { display: block; }
+  .help-panel p.title { color: var(--black); font-weight: 600; margin: 0 0 4px; }
+  .help-panel ul { margin: 0 0 12px; padding-left: 18px; }
+  .help-panel .note { color: var(--gray-400); margin: 0; }
+
+  .platform-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .platform-toggle button {
+    flex: 1;
+    padding: 12px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid var(--gray-300);
+    background: #fff;
+    color: var(--black);
+    cursor: pointer;
+  }
+  .platform-toggle button:hover { border-color: var(--black); }
+  .platform-toggle button.active {
+    background: var(--black);
+    color: #fff;
+    border-color: var(--black);
+  }
+
+  .inputs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  label.field { font-size: 14px; display: block; }
+  .field-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--gray-500);
+    margin-bottom: 4px;
+  }
+  input[type="number"] {
+    width: 100%;
+    border-radius: 6px;
+    border: 1px solid var(--gray-300);
+    padding: 10px 12px;
+    font-size: 16px;
+    font-family: inherit;
+  }
+  input[type="number"]:focus { border-color: var(--black); outline: none; }
+  .hint {
+    display: block;
+    font-size: 11px;
+    color: var(--gray-400);
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+
+  .tier-note {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--gray-400);
+    margin-bottom: 24px;
+  }
+
+  .toggles { margin-bottom: 24px; font-size: 14px; }
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 4px 0;
+  }
+  .toggle-row .left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .toggle-row input[type="checkbox"] { width: 16px; height: 16px; }
+  .pct-input-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .pct-input-group input[type="number"] {
+    width: 64px;
+    padding: 6px 8px;
+    text-align: right;
+    font-size: 14px;
+  }
+  .pct-input-group input:disabled { opacity: 0.4; }
+  .pct-input-group span { color: var(--gray-500); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; border-top: 2px solid var(--black); }
+  tr { border-bottom: 1px solid var(--gray-200); }
+  tr.muted { color: var(--gray-300); }
+  td { padding: 8px 0; }
+  td.row-label { display: flex; align-items: center; gap: 8px; }
+  td.value { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .final {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 2px solid var(--black);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+  .final .label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--gray-500);
+    margin: 0 0 2px;
+  }
+  .final .amount { font-size: 30px; font-weight: 600; margin: 0; font-variant-numeric: tabular-nums; }
+  .final .amount.danger { color: var(--red); }
+  .final .right { text-align: right; }
+
+  .warning {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    font-size: 14px;
+    color: var(--red);
+  }
+  .warning.show { display: flex; }
+
+  .disclaimer {
+    margin-top: 32px;
+    font-size: 11px;
+    color: var(--gray-400);
+    line-height: 1.6;
+  }
+
+  svg { display: block; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Quanto sobra na venda?</h1>
+      <p class="subtitle">Preencha preço e custo — o resto é calculado sozinho</p>
+    </div>
+    <button class="help-btn" id="helpBtn" aria-label="Ver taxas de cada plataforma">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </button>
+  </header>
+
+  <div class="help-panel" id="helpPanel">
+    <p class="title">TikTok Shop</p>
+    <ul>
+      <li>Abaixo de R$50: 10% de comissão</li>
+      <li>A partir de R$50: 6% + R$6,00 fixo por item</li>
+      <li>Frete grátis subsidiado: 6% do preço (teto R$50)</li>
+    </ul>
+    <p class="title">Shopee</p>
+    <ul>
+      <li>R$8 a R$79,99: 20% + R$4,00 fixo</li>
+      <li>R$80 a R$99,99: 14% + R$16,00 fixo</li>
+      <li>R$100 a R$199,99: 14% + R$20,00 fixo</li>
+      <li>Acima de R$200: 14% + R$26,00 fixo</li>
+      <li>Frete grátis já vem embutido na comissão</li>
+    </ul>
+    <p class="note">Tabela oficial vigente em 2026. Sua conta pode ter um valor diferente dependendo da categoria e do histórico de vendas.</p>
+  </div>
+
+  <div class="platform-toggle">
+    <button id="btnTiktok" class="active" data-platform="tiktok">TikTok Shop</button>
+    <button id="btnShopee" data-platform="shopee">Shopee</button>
+  </div>
+
+  <div class="inputs-grid">
+    <label class="field">
+      <span class="field-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+        Preço de venda
+      </span>
+      <input type="number" id="price" step="0.01" value="34.90">
+    </label>
+    <label class="field">
+      <span class="field-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        Custo do produto
+      </span>
+      <input type="number" id="cost" step="0.01" value="9.50">
+      <span class="hint">Já incluindo embalagem e rótulo. O frete ao cliente é pago pelo TikTok, não precisa somar aqui</span>
+    </label>
+  </div>
+
+  <p class="tier-note">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+    <span id="tierNote">Comissão de 10% + taxa fixa de R$ 4,00 aplicadas automaticamente para esse preço</span>
+  </p>
+
+  <div class="toggles">
+    <div class="toggle-row">
+      <label class="left">
+        <input type="checkbox" id="useAffiliate" checked>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Venda veio de afiliado
+      </label>
+      <div class="pct-input-group">
+        <input type="number" id="affiliatePct" step="0.5" value="20">
+        <span>%</span>
+      </div>
+    </div>
+    <div class="toggle-row">
+      <label class="left">
+        <input type="checkbox" id="useNf" checked>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>
+        Descontar imposto da nota fiscal
+      </label>
+      <div class="pct-input-group">
+        <input type="number" id="nfPct" step="0.5" value="6">
+        <span>%</span>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <tbody id="breakdown"></tbody>
+  </table>
+
+  <div class="final">
+    <div>
+      <p class="label" id="profitLabel">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        Lucro líquido
+      </p>
+      <p class="amount" id="profitValue">R$ 0,00</p>
+    </div>
+    <div class="right">
+      <p class="label" style="justify-content:flex-end">Margem</p>
+      <p class="amount" id="marginValue">0%</p>
+    </div>
+  </div>
+
+  <p class="warning" id="warning">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    Margem abaixo de 10% — esse preço está arriscado.
+  </p>
+
+  <p class="disclaimer">
+    Taxas de comissão calculadas pela tabela oficial de 2026 de cada plataforma. Se sua conta tiver um valor diferente, o número final pode variar um pouco.
+  </p>
+</div>
+
+<script>
+  const TIKTOK_TIERS = [
+    { max: 50, commission: 0.10, fixed: 4 },
+    { max: Infinity, commission: 0.06, fixed: 6 },
+  ];
+  const SHOPEE_TIERS = [
+    { max: 8, commission: 0.50, fixed: 0 },
+    { max: 80, commission: 0.20, fixed: 4 },
+    { max: 100, commission: 0.14, fixed: 16 },
+    { max: 200, commission: 0.14, fixed: 20 },
+    { max: Infinity, commission: 0.14, fixed: 26 },
+  ];
+
+  const ICONS = {
+    tag: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>',
+    package: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>',
+    percent: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>',
+    truck: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg>',
+    users: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    receipt: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>',
+  };
+
+  const state = { platform: "tiktok" };
+
+  const el = (id) => document.getElementById(id);
+  const priceInput = el("price");
+  const costInput = el("cost");
+  const affiliateCheck = el("useAffiliate");
+  const affiliatePctInput = el("affiliatePct");
+  const nfCheck = el("useNf");
+  const nfPctInput = el("nfPct");
+
+  function money(v) {
+    return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  }
+  function pct(v) {
+    return (v * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "%";
+  }
+  function tierFor(price, table) {
+    return table.find((t) => price < t.max) || table[table.length - 1];
+  }
+
+  function render() {
+    const price = Number(priceInput.value) || 0;
+    const cost = Number(costInput.value) || 0;
+    const useAffiliate = affiliateCheck.checked;
+    const affiliatePct = Number(affiliatePctInput.value) || 0;
+    const useNf = nfCheck.checked;
+    const nfPct = Number(nfPctInput.value) || 0;
+
+    affiliatePctInput.disabled = !useAffiliate;
+    nfPctInput.disabled = !useNf;
+
+    const table = state.platform === "tiktok" ? TIKTOK_TIERS : SHOPEE_TIERS;
+    const tier = tierFor(price, table);
+    const commission = tier.commission;
+    const fixed = tier.fixed;
+
+    el("tierNote").textContent =
+      `Comissão de ${pct(commission)} + taxa fixa de ${money(fixed)} aplicadas automaticamente para esse preço`;
+
+    const commissionValue = price * commission;
+    const fixedValue = fixed;
+    const freteValue = state.platform === "tiktok" ? Math.min(price * 0.06, 50) : 0;
+    const affiliateValue = useAffiliate ? price * (affiliatePct / 100) : 0;
+    const nfValue = useNf ? price * (nfPct / 100) : 0;
+
+    const totalCost = cost + commissionValue + fixedValue + freteValue + affiliateValue + nfValue;
+    const profit = price - totalCost;
+    const margin = price > 0 ? profit / price : 0;
+
+    const rows = [
+      { icon: "tag", label: "Você vendeu por", value: price },
+      { icon: "package", label: "Custo do produto", value: -cost },
+      { icon: "percent", label: `Taxa da plataforma (${pct(commission)})`, value: -commissionValue },
+      { icon: "percent", label: "Taxa fixa por item vendido", value: -fixedValue },
+    ];
+    if (state.platform === "tiktok") {
+      rows.push({ icon: "truck", label: "Frete grátis subsidiado (6%)", value: -freteValue });
+    }
+    rows.push({ icon: "users", label: "Comissão do afiliado", value: -affiliateValue, muted: !useAffiliate });
+    rows.push({ icon: "receipt", label: "Imposto da nota fiscal", value: -nfValue, muted: !useNf });
+
+    el("breakdown").innerHTML = rows.map((r) => `
+      <tr class="${r.muted ? "muted" : ""}">
+        <td class="row-label">${ICONS[r.icon]}${r.label}</td>
+        <td class="value">${r.value >= 0 ? money(r.value) : "− " + money(Math.abs(r.value))}</td>
+      </tr>
+    `).join("");
+
+    el("profitValue").textContent = money(profit);
+    el("profitValue").classList.toggle("danger", margin < 0.1);
+    el("marginValue").textContent = pct(margin);
+    el("marginValue").classList.toggle("danger", margin < 0.1);
+    el("warning").classList.toggle("show", margin < 0.1);
+
+    const trendIcon = profit >= 0
+      ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>'
+      : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>';
+    el("profitLabel").innerHTML = trendIcon + "Lucro líquido";
+  }
+
+  el("btnTiktok").addEventListener("click", () => {
+    state.platform = "tiktok";
+    el("btnTiktok").classList.add("active");
+    el("btnShopee").classList.remove("active");
+    render();
+  });
+  el("btnShopee").addEventListener("click", () => {
+    state.platform = "shopee";
+    el("btnShopee").classList.add("active");
+    el("btnTiktok").classList.remove("active");
+    render();
+  });
+  el("helpBtn").addEventListener("click", () => {
+    el("helpPanel").classList.toggle("open");
+    el("helpBtn").classList.toggle("active");
+  });
+
+  [priceInput, costInput, affiliateCheck, affiliatePctInput, nfCheck, nfPctInput].forEach((input) => {
+    input.addEventListener("input", render);
+  });
+
+  render();
+</script>
+
+</body>
+</html>

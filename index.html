@@ -221,13 +221,13 @@
   <div class="help-panel" id="helpPanel">
     <p class="title">TikTok Shop</p>
     <ul>
-      <li>Abaixo de R$50: 10% de comissão</li>
+      <li>Abaixo de R$50: 10% + R$4,00 fixo por item</li>
       <li>A partir de R$50: 6% + R$6,00 fixo por item</li>
       <li>Frete grátis subsidiado: 6% do preço (teto R$50)</li>
     </ul>
     <p class="title">Shopee</p>
     <ul>
-      <li>R$8 a R$79,99: 20% + R$4,00 fixo</li>
+      <li>Até R$79,99: 20% + R$4,00 fixo</li>
       <li>R$80 a R$99,99: 14% + R$16,00 fixo</li>
       <li>R$100 a R$199,99: 14% + R$20,00 fixo</li>
       <li>Acima de R$200: 14% + R$26,00 fixo</li>
@@ -255,7 +255,7 @@
         Custo do produto
       </span>
       <input type="number" id="cost" step="0.01" value="9.50">
-      <span class="hint">Já incluindo embalagem e rótulo. O frete ao cliente é pago pelo TikTok, não precisa somar aqui</span>
+      <span class="hint" id="costHint"></span>
     </label>
   </div>
 
@@ -322,8 +322,9 @@
     { max: 50, commission: 0.10, fixed: 4 },
     { max: Infinity, commission: 0.06, fixed: 6 },
   ];
+  // Faixas oficiais 2026. O "subsídio Pix" (5% a 8%) que aparece na tabela da
+  // Shopee NÃO entra no cálculo: quem banca é a Shopee, não o vendedor.
   const SHOPEE_TIERS = [
-    { max: 8, commission: 0.50, fixed: 0 },
     { max: 80, commission: 0.20, fixed: 4 },
     { max: 100, commission: 0.14, fixed: 16 },
     { max: 200, commission: 0.14, fixed: 20 },
@@ -374,6 +375,10 @@
     const tier = tierFor(price, table);
     const commission = tier.commission;
     const fixed = tier.fixed;
+
+    el("costHint").textContent = state.platform === "tiktok"
+      ? "Já incluindo embalagem e rótulo. O frete ao cliente é pago pelo TikTok, não precisa somar aqui"
+      : "Já incluindo embalagem e rótulo. O frete já está embutido na comissão da Shopee, não precisa somar aqui";
 
     el("tierNote").textContent =
       `Comissão de ${pct(commission)} + taxa fixa de ${money(fixed)} aplicadas automaticamente para esse preço`;

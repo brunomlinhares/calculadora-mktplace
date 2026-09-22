@@ -5,7 +5,7 @@
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "node --test \"tests/unit/*.test.js\"",
     "test:e2e": "playwright test",
-    "build": "rm -rf _site && mkdir _site && cp index.html calc.js _site/"
+    "build": "rm -rf _site && mkdir -p _site/vendor && cp index.html calc.js _site/ && cp vendor/*.js _site/vendor/"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",

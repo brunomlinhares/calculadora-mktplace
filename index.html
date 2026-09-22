@@ -196,7 +196,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    flex-shrink: 0;
+    min-width: 0;
   }
   .toggle-row input[type="checkbox"] { width: 16px; height: 16px; }
   .pct-input-group {
@@ -259,6 +259,60 @@
   }
 
   svg { display: block; flex-shrink: 0; }
+
+  /* ---------- PC (>= 900px): inputs fixos à esquerda, resultado à direita ---------- */
+  @media (min-width: 900px) {
+    body { padding: 24px 40px; }
+    .wrap { max-width: 1100px; }
+    header { margin-bottom: 20px; }
+    .layout {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 56px;
+      align-items: start;
+    }
+    .panel-inputs {
+      position: sticky;
+      top: 24px;
+    }
+    .panel-inputs .inputs-grid { grid-template-columns: 1fr; gap: 14px; margin-bottom: 16px; }
+    .panel-inputs .toggles { margin-bottom: 0; }
+    .platform-toggle { margin-bottom: 20px; }
+    .tier-note { margin-bottom: 16px; }
+
+    /* Resultado: número principal + lucro/margem na mesma linha, detalhamento embaixo */
+    .panel-results {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      column-gap: 32px;
+      border-top: 2px solid var(--black);
+      padding-top: 16px;
+    }
+    .panel-results > * { grid-column: 1 / -1; }
+    .panel-results .hero {
+      grid-column: 1; grid-row: 1;
+      border-top: none; padding-top: 0; margin-bottom: 12px;
+    }
+    .panel-results .final {
+      grid-row: 1;
+      margin: 0 0 12px; padding: 0; border-top: none;
+      gap: 32px; align-items: flex-start;
+    }
+    body.mode-reverse .panel-results .final { grid-column: 2; }
+    body:not(.mode-reverse) .panel-results .final { grid-column: 1 / -1; }
+    .panel-results #breakdownTable { grid-row: 2; }
+    .panel-results .warning { grid-row: 3; }
+    .panel-results .margin-table-wrap { grid-row: 4; margin-top: 20px; }
+    .final .amount { font-size: 26px; }
+    .hero .amount { font-size: 34px; }
+    td { padding: 5px 0; }
+    .disclaimer { margin-top: 20px; }
+
+    table.margins td { padding: 5px 0; white-space: nowrap; }
+    table.margins td .p, table.margins td .l { display: inline-block; }
+    table.margins td .l { min-width: 116px; font-size: 13px; }
+    .margin-table-wrap .sub { margin-bottom: 8px; }
+  }
 </style>
 </head>
 <body>
@@ -292,6 +346,8 @@
     <p class="note">Tabela oficial vigente em 2026. Sua conta pode ter um valor diferente dependendo da categoria e do histórico de vendas.</p>
   </div>
 
+  <div class="layout">
+  <section class="panel-inputs" aria-label="Dados da venda">
   <div class="mode-tabs">
     <button id="tabForward" class="active" data-mode="forward">Quanto sobra</button>
     <button id="tabReverse" data-mode="reverse">Quanto cobrar</button>
@@ -358,6 +414,9 @@
     </div>
   </div>
 
+  </section>
+
+  <section class="panel-results" aria-label="Resultado">
   <div class="hero reverse-only">
     <p class="label">Cadastre por</p>
     <p class="amount" id="suggestedPrice">R$ 0,00</p>
@@ -397,6 +456,9 @@
       <tbody id="marginRows"></tbody>
     </table>
     <p class="hint" id="marginFootnote"></p>
+  </div>
+
+  </section>
   </div>
 
   <p class="disclaimer">

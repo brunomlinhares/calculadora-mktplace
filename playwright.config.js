@@ -13,6 +13,9 @@ module.exports = defineConfig({
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "mobile", use: { ...devices["Pixel 7"] } },
+    // Pior caso de Mac pequeno (MacBook 13" antigo, descontando barras do navegador)
+    { name: "safari-mac-pequeno", use: { ...devices["Desktop Safari"], viewport: { width: 1280, height: 680 } } },
+    { name: "safari-iphone", use: { ...devices["iPhone 13"] } },
   ],
   // Testa exatamente o que vai pro Pages (saída do build), não a raiz do repo.
   webServer: {

@@ -85,3 +85,48 @@ test("sem scroll horizontal", async ({ page }) => {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   expect(overflow).toBe(false);
 });
+
+test.describe("layout de PC", () => {
+  test.skip(({ viewport }) => viewport.width < 900, "só em telas >= 900px");
+
+  test("inputs à esquerda e resultado à direita", async ({ page }) => {
+    await page.click("#tabReverse");
+    const inputs = await page.locator(".panel-inputs").boundingBox();
+    const results = await page.locator(".panel-results").boundingBox();
+    expect(results.x).toBeGreaterThan(inputs.x + inputs.width);
+    expect(Math.abs(results.y - inputs.y)).toBeLessThan(40);
+  });
+
+  test("preço, lucro e margem ficam na mesma linha no topo", async ({ page }) => {
+    await page.click("#tabReverse");
+    const hero = await page.locator(".hero").boundingBox();
+    const final = await page.locator("#finalBlock").boundingBox();
+    expect(final.x).toBeGreaterThan(hero.x + 100);
+    expect(Math.abs(final.y - hero.y)).toBeLessThan(20);
+  });
+
+  test("tabela de margens inteira visível sem rolar", async ({ page }) => {
+    await page.click("#tabReverse");
+    const lastRow = await page.locator("#marginRows tr").last().boundingBox();
+    const vh = page.viewportSize().height;
+    expect(lastRow.y + lastRow.height).toBeLessThanOrEqual(vh);
+  });
+
+  test("coluna de inputs fica fixa ao rolar", async ({ page }) => {
+    await page.setViewportSize({ width: page.viewportSize().width, height: 450 });
+    await page.click("#tabReverse");
+    await page.evaluate(() => window.scrollTo(0, 150));
+    await page.waitForFunction(() => window.scrollY === 150);
+    // Sticky com top: 24px -> o topo da coluna para em ~24px em vez de sumir pra cima.
+    const panel = await page.locator(".panel-inputs").boundingBox();
+    expect(panel.y).toBeGreaterThanOrEqual(23);
+  });
+});
+
+test("mobile continua em coluna única", async ({ page }) => {
+  test.skip(page.viewportSize().width >= 900, "só em telas < 900px");
+  await page.click("#tabReverse");
+  const inputs = await page.locator(".panel-inputs").boundingBox();
+  const results = await page.locator(".panel-results").boundingBox();
+  expect(results.y).toBeGreaterThan(inputs.y + inputs.height - 1);
+});

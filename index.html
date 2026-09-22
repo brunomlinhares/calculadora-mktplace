@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quanto sobra na venda?</title>
+<link rel="icon" href="data:,">
 <style>
   :root {
     --black: #111;
@@ -65,6 +66,61 @@
   .help-panel p.title { color: var(--black); font-weight: 600; margin: 0 0 4px; }
   .help-panel ul { margin: 0 0 12px; padding-left: 18px; }
   .help-panel .note { color: var(--gray-400); margin: 0; }
+
+  .mode-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--gray-200);
+    margin-bottom: 20px;
+  }
+  .mode-tabs button {
+    flex: 1;
+    padding: 10px 4px;
+    font-size: 14px;
+    font-family: inherit;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    color: var(--gray-500);
+    cursor: pointer;
+  }
+  .mode-tabs button:hover { color: var(--black); }
+  .mode-tabs button.active { color: var(--black); border-bottom-color: var(--black); font-weight: 600; }
+
+  body:not(.mode-reverse) .reverse-only,
+  body.mode-reverse .forward-only,
+  body.mode-reverse .forward-only-flex { display: none; }
+  body.mode-reverse .field-cost { order: -1; }
+
+  .hero {
+    border-top: 2px solid var(--black);
+    padding-top: 16px;
+    margin-bottom: 16px;
+  }
+  .hero .label { font-size: 14px; color: var(--gray-500); margin: 0 0 2px; }
+  .hero .amount { font-size: 34px; font-weight: 600; margin: 0; font-variant-numeric: tabular-nums; }
+  .hero .note { font-size: 12px; color: var(--gray-400); margin: 4px 0 0; line-height: 1.5; }
+  .hero .amount.danger { color: var(--red); }
+
+  .margin-table-wrap { margin-top: 40px; }
+  .margin-table-wrap h2 { font-size: 16px; font-weight: 600; margin: 0 0 4px; }
+  .margin-table-wrap .sub { font-size: 12px; color: var(--gray-400); margin: 0 0 12px; }
+  table.margins th {
+    text-align: right;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray-500);
+    padding: 8px 0;
+  }
+  table.margins th:first-child, table.margins td:first-child { text-align: left; }
+  table.margins td { vertical-align: top; text-align: right; font-variant-numeric: tabular-nums; }
+  table.margins td .p { display: block; font-weight: 600; }
+  table.margins td .l { display: block; font-size: 11px; color: var(--gray-400); }
+  table.margins td.na { color: var(--gray-300); }
+  table.margins tr.current { background: #f3f4f6; }
+  table.margins tr.current td:first-child { font-weight: 600; }
+  table.margins td:first-child { padding-left: 6px; }
+  table.margins td:last-child, table.margins th:last-child { padding-right: 6px; }
 
   .platform-toggle {
     display: flex;
@@ -236,20 +292,25 @@
     <p class="note">Tabela oficial vigente em 2026. Sua conta pode ter um valor diferente dependendo da categoria e do histórico de vendas.</p>
   </div>
 
+  <div class="mode-tabs">
+    <button id="tabForward" class="active" data-mode="forward">Quanto sobra</button>
+    <button id="tabReverse" data-mode="reverse">Quanto cobrar</button>
+  </div>
+
   <div class="platform-toggle">
     <button id="btnTiktok" class="active" data-platform="tiktok">TikTok Shop</button>
     <button id="btnShopee" data-platform="shopee">Shopee</button>
   </div>
 
   <div class="inputs-grid">
-    <label class="field">
+    <label class="field forward-only">
       <span class="field-label">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
         Preço de venda
       </span>
       <input type="number" id="price" step="0.01" value="34.90">
     </label>
-    <label class="field">
+    <label class="field field-cost">
       <span class="field-label">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
         Custo do produto
@@ -257,9 +318,17 @@
       <input type="number" id="cost" step="0.01" value="9.50">
       <span class="hint" id="costHint"></span>
     </label>
+    <label class="field reverse-only">
+      <span class="field-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        Margem desejada (%)
+      </span>
+      <input type="number" id="targetMargin" step="1" value="30">
+      <span class="hint">Lucro líquido sobre o preço de venda</span>
+    </label>
   </div>
 
-  <p class="tier-note">
+  <p class="tier-note forward-only-flex">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
     <span id="tierNote">Comissão de 10% + taxa fixa de R$ 4,00 aplicadas automaticamente para esse preço</span>
   </p>
@@ -289,11 +358,17 @@
     </div>
   </div>
 
-  <table>
+  <div class="hero reverse-only">
+    <p class="label">Cadastre por</p>
+    <p class="amount" id="suggestedPrice">R$ 0,00</p>
+    <p class="note" id="suggestedNote"></p>
+  </div>
+
+  <table id="breakdownTable">
     <tbody id="breakdown"></tbody>
   </table>
 
-  <div class="final">
+  <div class="final" id="finalBlock">
     <div>
       <p class="label" id="profitLabel">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
@@ -312,24 +387,26 @@
     Margem abaixo de 10% — esse preço está arriscado.
   </p>
 
+  <div class="margin-table-wrap reverse-only">
+    <h2>Tabela de margens</h2>
+    <p class="sub">Por quanto cadastrar em cada plataforma pra ter essa margem, com os mesmos custo, afiliado e NF acima</p>
+    <table class="margins">
+      <thead>
+        <tr><th>Margem</th><th>TikTok Shop</th><th>Shopee</th></tr>
+      </thead>
+      <tbody id="marginRows"></tbody>
+    </table>
+    <p class="hint" id="marginFootnote"></p>
+  </div>
+
   <p class="disclaimer">
     Taxas de comissão calculadas pela tabela oficial de 2026 de cada plataforma. Se sua conta tiver um valor diferente, o número final pode variar um pouco.
   </p>
 </div>
 
+<script src="calc.js"></script>
 <script>
-  const TIKTOK_TIERS = [
-    { max: 50, commission: 0.10, fixed: 4 },
-    { max: Infinity, commission: 0.06, fixed: 6 },
-  ];
-  // Faixas oficiais 2026. O "subsídio Pix" (5% a 8%) que aparece na tabela da
-  // Shopee NÃO entra no cálculo: quem banca é a Shopee, não o vendedor.
-  const SHOPEE_TIERS = [
-    { max: 80, commission: 0.20, fixed: 4 },
-    { max: 100, commission: 0.14, fixed: 16 },
-    { max: 200, commission: 0.14, fixed: 20 },
-    { max: Infinity, commission: 0.14, fixed: 26 },
-  ];
+  const { MARGIN_STEPS, calcSale, solvePrice } = window.Calc;
 
   const ICONS = {
     tag: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>',
@@ -340,11 +417,14 @@
     receipt: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>',
   };
 
-  const state = { platform: "tiktok" };
+  const STORAGE_KEY = "calc-mktplace:v1";
+
+  const state = { platform: "tiktok", mode: "forward" };
 
   const el = (id) => document.getElementById(id);
   const priceInput = el("price");
   const costInput = el("cost");
+  const targetMarginInput = el("targetMargin");
   const affiliateCheck = el("useAffiliate");
   const affiliatePctInput = el("affiliatePct");
   const nfCheck = el("useNf");
@@ -356,54 +436,29 @@
   function pct(v) {
     return (v * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "%";
   }
-  function tierFor(price, table) {
-    return table.find((t) => price < t.max) || table[table.length - 1];
+  function readInputs() {
+    return {
+      price: Number(priceInput.value) || 0,
+      cost: Number(costInput.value) || 0,
+      target: (Number(targetMarginInput.value) || 0) / 100,
+      affiliatePct: affiliateCheck.checked ? (Number(affiliatePctInput.value) || 0) / 100 : 0,
+      nfPct: nfCheck.checked ? (Number(nfPctInput.value) || 0) / 100 : 0,
+    };
   }
 
-  function render() {
-    const price = Number(priceInput.value) || 0;
-    const cost = Number(costInput.value) || 0;
-    const useAffiliate = affiliateCheck.checked;
-    const affiliatePct = Number(affiliatePctInput.value) || 0;
-    const useNf = nfCheck.checked;
-    const nfPct = Number(nfPctInput.value) || 0;
-
-    affiliatePctInput.disabled = !useAffiliate;
-    nfPctInput.disabled = !useNf;
-
-    const table = state.platform === "tiktok" ? TIKTOK_TIERS : SHOPEE_TIERS;
-    const tier = tierFor(price, table);
-    const commission = tier.commission;
-    const fixed = tier.fixed;
-
-    el("costHint").textContent = state.platform === "tiktok"
-      ? "Já incluindo embalagem e rótulo. O frete ao cliente é pago pelo TikTok, não precisa somar aqui"
-      : "Já incluindo embalagem e rótulo. O frete já está embutido na comissão da Shopee, não precisa somar aqui";
-
-    el("tierNote").textContent =
-      `Comissão de ${pct(commission)} + taxa fixa de ${money(fixed)} aplicadas automaticamente para esse preço`;
-
-    const commissionValue = price * commission;
-    const fixedValue = fixed;
-    const freteValue = state.platform === "tiktok" ? Math.min(price * 0.06, 50) : 0;
-    const affiliateValue = useAffiliate ? price * (affiliatePct / 100) : 0;
-    const nfValue = useNf ? price * (nfPct / 100) : 0;
-
-    const totalCost = cost + commissionValue + fixedValue + freteValue + affiliateValue + nfValue;
-    const profit = price - totalCost;
-    const margin = price > 0 ? profit / price : 0;
-
-    const rows = [
-      { icon: "tag", label: "Você vendeu por", value: price },
-      { icon: "package", label: "Custo do produto", value: -cost },
-      { icon: "percent", label: `Taxa da plataforma (${pct(commission)})`, value: -commissionValue },
-      { icon: "percent", label: "Taxa fixa por item vendido", value: -fixedValue },
-    ];
+  function renderBreakdown(sale) {
+    const rows = [];
+    if (state.mode === "forward") rows.push({ icon: "tag", label: "Você vendeu por", value: sale.price });
+    rows.push(
+      { icon: "package", label: "Custo do produto", value: -sale.cost },
+      { icon: "percent", label: `Taxa da plataforma (${pct(sale.tier.commission)})`, value: -sale.commissionValue },
+      { icon: "percent", label: "Taxa fixa por item vendido", value: -sale.fixedValue },
+    );
     if (state.platform === "tiktok") {
-      rows.push({ icon: "truck", label: "Frete grátis subsidiado (6%)", value: -freteValue });
+      rows.push({ icon: "truck", label: "Frete grátis subsidiado (6%)", value: -sale.freteValue });
     }
-    rows.push({ icon: "users", label: "Comissão do afiliado", value: -affiliateValue, muted: !useAffiliate });
-    rows.push({ icon: "receipt", label: "Imposto da nota fiscal", value: -nfValue, muted: !useNf });
+    rows.push({ icon: "users", label: "Comissão do afiliado", value: -sale.affiliateValue, muted: !affiliateCheck.checked });
+    rows.push({ icon: "receipt", label: "Imposto da nota fiscal", value: -sale.nfValue, muted: !nfCheck.checked });
 
     el("breakdown").innerHTML = rows.map((r) => `
       <tr class="${r.muted ? "muted" : ""}">
@@ -411,41 +466,149 @@
         <td class="value">${r.value >= 0 ? money(r.value) : "− " + money(Math.abs(r.value))}</td>
       </tr>
     `).join("");
+  }
 
-    el("profitValue").textContent = money(profit);
-    el("profitValue").classList.toggle("danger", margin < 0.1);
-    el("marginValue").textContent = pct(margin);
-    el("marginValue").classList.toggle("danger", margin < 0.1);
-    el("warning").classList.toggle("show", margin < 0.1);
+  function renderFinal(sale) {
+    const low = sale.margin < 0.1;
+    el("profitValue").textContent = money(sale.profit);
+    el("profitValue").classList.toggle("danger", low);
+    el("marginValue").textContent = pct(sale.margin);
+    el("marginValue").classList.toggle("danger", low);
+    el("warning").classList.toggle("show", state.mode === "forward" && low);
 
-    const trendIcon = profit >= 0
+    const trendIcon = sale.profit >= 0
       ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>'
       : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>';
     el("profitLabel").innerHTML = trendIcon + "Lucro líquido";
   }
 
-  el("btnTiktok").addEventListener("click", () => {
-    state.platform = "tiktok";
-    el("btnTiktok").classList.add("active");
-    el("btnShopee").classList.remove("active");
+  function renderMarginTable(inp) {
+    let anyAbove = false;
+    el("marginRows").innerHTML = MARGIN_STEPS.map((m) => {
+      const cells = ["tiktok", "shopee"].map((platform) => {
+        const sale = solvePrice(platform, inp.cost, inp.affiliatePct, inp.nfPct, m);
+        if (!sale) return '<td class="na">inviável</td>';
+        if (sale.aboveTarget) anyAbove = true;
+        return `<td><span class="p">${money(sale.price)}${sale.aboveTarget ? " *" : ""}</span>` +
+          `<span class="l">lucro ${money(sale.profit)}${sale.aboveTarget ? " · " + pct(sale.margin) : ""}</span></td>`;
+      }).join("");
+      const current = Math.abs(m - inp.target) < 1e-9;
+      return `<tr class="${current ? "current" : ""}"><td>${pct(m)}</td>${cells}</tr>`;
+    }).join("");
+    el("marginFootnote").textContent = anyAbove
+      ? "* Preço caiu no pulo entre faixas de comissão: o menor preço possível já dá margem acima da pedida."
+      : "";
+  }
+
+  function render() {
+    const inp = readInputs();
+
+    affiliatePctInput.disabled = !affiliateCheck.checked;
+    nfPctInput.disabled = !nfCheck.checked;
+
+    el("costHint").textContent = state.platform === "tiktok"
+      ? "Já incluindo embalagem e rótulo. O frete ao cliente é pago pelo TikTok, não precisa somar aqui"
+      : "Já incluindo embalagem e rótulo. O frete já está embutido na comissão da Shopee, não precisa somar aqui";
+
+    if (state.mode === "forward") {
+      const sale = calcSale(state.platform, inp.price, inp.cost, inp.affiliatePct, inp.nfPct);
+      el("tierNote").textContent =
+        `Comissão de ${pct(sale.tier.commission)} + taxa fixa de ${money(sale.tier.fixed)} aplicadas automaticamente para esse preço`;
+      el("breakdownTable").style.display = "";
+      el("finalBlock").style.display = "";
+      renderBreakdown(sale);
+      renderFinal(sale);
+    } else {
+      const sale = solvePrice(state.platform, inp.cost, inp.affiliatePct, inp.nfPct, inp.target);
+      if (!sale) {
+        el("suggestedPrice").textContent = "Inviável";
+        el("suggestedPrice").classList.add("danger");
+        el("suggestedNote").textContent =
+          "Comissão + afiliado + NF + margem passam de 100% do preço. Baixe a margem ou os percentuais.";
+        el("breakdownTable").style.display = "none";
+        el("finalBlock").style.display = "none";
+        el("warning").classList.remove("show");
+      } else {
+        el("suggestedPrice").textContent = money(sale.price);
+        el("suggestedPrice").classList.remove("danger");
+        let note = `Faixa: ${pct(sale.tier.commission)} + ${money(sale.tier.fixed)} fixo`;
+        if (sale.aboveTarget) {
+          note += ` · margem real de ${pct(sale.margin)}, acima da pedida — esse é o menor preço possível por causa do pulo entre faixas de comissão`;
+        }
+        el("suggestedNote").textContent = note;
+        el("breakdownTable").style.display = "";
+        el("finalBlock").style.display = "";
+        renderBreakdown(sale);
+        renderFinal(sale);
+      }
+      renderMarginTable(inp);
+    }
+    save();
+  }
+
+  function save() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        platform: state.platform,
+        mode: state.mode,
+        price: priceInput.value,
+        cost: costInput.value,
+        targetMargin: targetMarginInput.value,
+        useAffiliate: affiliateCheck.checked,
+        affiliatePct: affiliatePctInput.value,
+        useNf: nfCheck.checked,
+        nfPct: nfPctInput.value,
+      }));
+    } catch (e) { /* storage indisponível: segue sem salvar */ }
+  }
+
+  function load() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+      if (!saved) return;
+      if (saved.platform === "tiktok" || saved.platform === "shopee") state.platform = saved.platform;
+      if (saved.mode === "forward" || saved.mode === "reverse") state.mode = saved.mode;
+      if (saved.price != null) priceInput.value = saved.price;
+      if (saved.cost != null) costInput.value = saved.cost;
+      if (saved.targetMargin != null) targetMarginInput.value = saved.targetMargin;
+      if (saved.affiliatePct != null) affiliatePctInput.value = saved.affiliatePct;
+      if (saved.nfPct != null) nfPctInput.value = saved.nfPct;
+      if (typeof saved.useAffiliate === "boolean") affiliateCheck.checked = saved.useAffiliate;
+      if (typeof saved.useNf === "boolean") nfCheck.checked = saved.useNf;
+    } catch (e) { /* dado corrompido ou storage bloqueado: usa os padrões */ }
+  }
+
+  function setPlatform(platform) {
+    state.platform = platform;
+    el("btnTiktok").classList.toggle("active", platform === "tiktok");
+    el("btnShopee").classList.toggle("active", platform === "shopee");
     render();
-  });
-  el("btnShopee").addEventListener("click", () => {
-    state.platform = "shopee";
-    el("btnShopee").classList.add("active");
-    el("btnTiktok").classList.remove("active");
+  }
+  function setMode(mode) {
+    state.mode = mode;
+    document.body.classList.toggle("mode-reverse", mode === "reverse");
+    el("tabForward").classList.toggle("active", mode === "forward");
+    el("tabReverse").classList.toggle("active", mode === "reverse");
     render();
-  });
+  }
+
+  el("btnTiktok").addEventListener("click", () => setPlatform("tiktok"));
+  el("btnShopee").addEventListener("click", () => setPlatform("shopee"));
+  el("tabForward").addEventListener("click", () => setMode("forward"));
+  el("tabReverse").addEventListener("click", () => setMode("reverse"));
   el("helpBtn").addEventListener("click", () => {
     el("helpPanel").classList.toggle("open");
     el("helpBtn").classList.toggle("active");
   });
 
-  [priceInput, costInput, affiliateCheck, affiliatePctInput, nfCheck, nfPctInput].forEach((input) => {
+  [priceInput, costInput, targetMarginInput, affiliateCheck, affiliatePctInput, nfCheck, nfPctInput].forEach((input) => {
     input.addEventListener("input", render);
   });
 
-  render();
+  load();
+  el("btnTiktok").classList.toggle("active", state.platform === "tiktok");
+  el("btnShopee").classList.toggle("active", state.platform === "shopee");
+  setMode(state.mode);
 </script>
 
 </body>

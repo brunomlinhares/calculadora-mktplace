@@ -130,3 +130,41 @@ test("mobile continua em coluna única", async ({ page }) => {
   const results = await page.locator(".panel-results").boundingBox();
   expect(results.y).toBeGreaterThan(inputs.y + inputs.height - 1);
 });
+
+test.describe("gráfico de composição do preço", () => {
+  const sliceCount = (page) => page.evaluate(() => Chart.getChart("donutChart").data.datasets[0].data.length);
+  const sharesOf = (page) => page.$$eval("#donutLegend li .pc", (els) =>
+    els.map((e) => e.textContent).filter((t) => t !== "—")
+      .map((t) => parseFloat(t.replace("%", "").replace(",", "."))));
+
+  test("fatias somam 100% e lucro bate com a margem", async ({ page }) => {
+    await expect(page.locator("#donutLegend li")).toHaveCount(5);
+    await expect(page.locator("#donutCenter")).toHaveText("19,3%");
+    await expect(page.locator('#donutLegend li[data-slice="profit"] .v')).toHaveText("R$ 6,74");
+    const total = (await sharesOf(page)).reduce((a, b) => a + b, 0);
+    expect(Math.abs(total - 100)).toBeLessThan(0.5);
+    await expect.poll(() => sliceCount(page)).toBe(5);
+  });
+
+  test("afiliado desligado some do gráfico", async ({ page }) => {
+    await page.uncheck("#useAffiliate");
+    await expect(page.locator('#donutLegend li[data-slice="affiliate"]')).toHaveClass(/muted/);
+    await expect.poll(() => sliceCount(page)).toBe(4);
+    await expect(page.locator("#breakdown")).not.toContainText("-R$ 0,00");
+  });
+
+  test("prejuízo aparece no centro e em vermelho na legenda", async ({ page }) => {
+    await page.fill("#price", "18");
+    await expect(page.locator("#donutCenter")).toHaveText("Prejuízo");
+    await expect(page.locator('#donutLegend li[data-slice="profit"]')).toHaveClass(/loss/);
+    await expect.poll(() => sliceCount(page)).toBe(4);
+  });
+
+  test("acompanha a aba Quanto cobrar", async ({ page }) => {
+    await page.click("#tabReverse");
+    await expect(page.locator("#composition")).toBeVisible();
+    await expect(page.locator("#donutCenter")).toHaveText("30%");
+    await page.fill("#targetMargin", "80");
+    await expect(page.locator("#composition")).toBeHidden();
+  });
+});

@@ -1,0 +1,14 @@
+{
+  "name": "calculadora-mktplace",
+  "private": true,
+  "scripts": {
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node --test \"tests/unit/*.test.js\"",
+    "test:e2e": "playwright test",
+    "build": "rm -rf _site && mkdir _site && cp index.html calc.js _site/"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "serve": "14.2.4"
+  }
+}

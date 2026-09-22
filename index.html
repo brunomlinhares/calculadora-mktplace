@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quanto sobra na venda?</title>
+<link rel="icon" href="data:,">
 <style>
   :root {
     --black: #111;
@@ -403,19 +404,9 @@
   </p>
 </div>
 
+<script src="calc.js"></script>
 <script>
-  const TIKTOK_TIERS = [
-    { max: 50, commission: 0.10, fixed: 4 },
-    { max: Infinity, commission: 0.06, fixed: 6 },
-  ];
-  // Faixas oficiais 2026. O "subsídio Pix" (5% a 8%) que aparece na tabela da
-  // Shopee NÃO entra no cálculo: quem banca é a Shopee, não o vendedor.
-  const SHOPEE_TIERS = [
-    { max: 80, commission: 0.20, fixed: 4 },
-    { max: 100, commission: 0.14, fixed: 16 },
-    { max: 200, commission: 0.14, fixed: 20 },
-    { max: Infinity, commission: 0.14, fixed: 26 },
-  ];
+  const { MARGIN_STEPS, calcSale, solvePrice } = window.Calc;
 
   const ICONS = {
     tag: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>',
@@ -426,9 +417,6 @@
     receipt: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>',
   };
 
-  const MARGIN_STEPS = [0.10, 0.20, 0.30, 0.40, 0.50, 0.60];
-  const TIKTOK_FRETE_PCT = 0.06;
-  const TIKTOK_FRETE_CAP = 50;
   const STORAGE_KEY = "calc-mktplace:v1";
 
   const state = { platform: "tiktok", mode: "forward" };
@@ -448,66 +436,6 @@
   function pct(v) {
     return (v * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + "%";
   }
-  function tiersFor(platform) {
-    return platform === "tiktok" ? TIKTOK_TIERS : SHOPEE_TIERS;
-  }
-  function tierFor(price, table) {
-    return table.find((t) => price < t.max) || table[table.length - 1];
-  }
-
-  // Custos de uma venda a um preço. Percentuais de afiliado e NF em fração (0.2 = 20%).
-  function calcSale(platform, price, cost, affiliatePct, nfPct) {
-    const tier = tierFor(price, tiersFor(platform));
-    const commissionValue = price * tier.commission;
-    const freteValue = platform === "tiktok" ? Math.min(price * TIKTOK_FRETE_PCT, TIKTOK_FRETE_CAP) : 0;
-    const affiliateValue = price * affiliatePct;
-    const nfValue = price * nfPct;
-    const profit = price - cost - commissionValue - tier.fixed - freteValue - affiliateValue - nfValue;
-    return {
-      price, cost, tier, commissionValue, fixedValue: tier.fixed, freteValue, affiliateValue, nfValue,
-      profit, margin: price > 0 ? profit / price : 0,
-    };
-  }
-
-  // Conta reversa: menor preço (em centavos) cuja margem sobre a venda é >= alvo.
-  // Dentro de cada faixa a margem só cresce com o preço, então basta resolver a
-  // equação por faixa e ficar com o menor preço que cai dentro da própria faixa.
-  // Se a solução cai antes do início da faixa (buraco entre faixas), o piso da
-  // faixa já entrega margem acima do alvo.
-  function solvePrice(platform, cost, affiliatePct, nfPct, target) {
-    const tiers = tiersFor(platform);
-    const extra = affiliatePct + nfPct;
-    let best = null;
-    let lo = 0;
-    for (const tier of tiers) {
-      const hi = tier.max;
-      let p = Infinity;
-      if (platform === "tiktok") {
-        const d6 = 1 - tier.commission - TIKTOK_FRETE_PCT - extra - target;
-        const p6 = d6 > 0 ? (cost + tier.fixed) / d6 : Infinity;
-        if (p6 <= TIKTOK_FRETE_CAP / TIKTOK_FRETE_PCT) {
-          p = p6;
-        } else {
-          const d50 = 1 - tier.commission - extra - target;
-          p = d50 > 0 ? (cost + tier.fixed + TIKTOK_FRETE_CAP) / d50 : Infinity;
-        }
-      } else {
-        const d = 1 - tier.commission - extra - target;
-        p = d > 0 ? (cost + tier.fixed) / d : Infinity;
-      }
-      if (Number.isFinite(p)) {
-        const candidate = Math.ceil(Math.max(p, lo) * 100 - 1e-6) / 100;
-        if (candidate < hi && (best === null || candidate < best)) best = candidate;
-      }
-      lo = hi;
-    }
-    if (best === null || best <= 0) return null;
-    const sale = calcSale(platform, best, cost, affiliatePct, nfPct);
-    // Arredondar pra centavos nunca derruba a margem; > alvo + 0,5pp = pulou buraco de faixa.
-    sale.aboveTarget = sale.margin > target + 0.005;
-    return sale;
-  }
-
   function readInputs() {
     return {
       price: Number(priceInput.value) || 0,

@@ -370,7 +370,7 @@
     <ul>
       <li>Abaixo de R$50: 10% + R$4,00 fixo por item</li>
       <li>A partir de R$50: 6% + R$6,00 fixo por item</li>
-      <li>Frete grátis subsidiado: 6% do preço (teto R$50)</li>
+      <li>Calculado sobre o preço já com o desconto do vendedor</li>
     </ul>
     <p class="title">Shopee</p>
     <ul>
@@ -402,6 +402,7 @@
         Preço de venda
       </span>
       <input type="number" id="price" step="0.01" value="34.90">
+      <span class="hint">Valor já com desconto do vendedor</span>
     </label>
     <label class="field field-cost">
       <span class="field-label">
@@ -562,12 +563,9 @@
     if (state.mode === "forward") rows.push({ icon: "tag", label: "Você vendeu por", value: sale.price });
     rows.push(
       { icon: "package", label: "Custo do produto", value: -sale.cost },
-      { icon: "percent", label: `Taxa da plataforma (${pct(sale.tier.commission)})`, value: -sale.commissionValue },
+      { icon: "percent", label: `Comissão ${state.platform === "tiktok" ? "TikTok" : "Shopee"} (${pct(sale.tier.commission)})`, value: -sale.commissionValue },
       { icon: "percent", label: "Taxa fixa por item vendido", value: -sale.fixedValue },
     );
-    if (state.platform === "tiktok") {
-      rows.push({ icon: "truck", label: "Frete grátis subsidiado (6%)", value: -sale.freteValue });
-    }
     rows.push({ icon: "users", label: "Comissão do afiliado", value: -sale.affiliateValue, muted: !affiliateCheck.checked });
     rows.push({ icon: "receipt", label: "Imposto da nota fiscal", value: -sale.nfValue, muted: !nfCheck.checked });
 
@@ -606,7 +604,7 @@
     const values = {
       profit: Math.max(sale.profit, 0),
       cost: sale.cost,
-      platform: sale.commissionValue + sale.fixedValue + sale.freteValue,
+      platform: sale.commissionValue + sale.fixedValue,
       affiliate: sale.affiliateValue,
       nf: sale.nfValue,
     };
@@ -702,7 +700,7 @@
     nfPctInput.disabled = !nfCheck.checked;
 
     el("costHint").textContent = state.platform === "tiktok"
-      ? "Já incluindo embalagem e rótulo. O frete ao cliente é pago pelo TikTok, não precisa somar aqui"
+      ? "Já incluindo embalagem e rótulo. O frete é pago pelo cliente e repassado à transportadora, não precisa somar aqui"
       : "Já incluindo embalagem e rótulo. O frete já está embutido na comissão da Shopee, não precisa somar aqui";
 
     if (state.mode === "forward") {
@@ -729,7 +727,7 @@
       } else {
         el("suggestedPrice").textContent = money(sale.price);
         el("suggestedPrice").classList.remove("danger");
-        let note = `Faixa: ${pct(sale.tier.commission)} + ${money(sale.tier.fixed)} fixo`;
+        let note = `Valor final, já com desconto do vendedor · Faixa: ${pct(sale.tier.commission)} + ${money(sale.tier.fixed)} fixo`;
         if (sale.aboveTarget) {
           note += ` · margem real de ${pct(sale.margin)}, acima da pedida — esse é o menor preço possível por causa do pulo entre faixas de comissão`;
         }

@@ -16,16 +16,37 @@ test.afterEach(async ({ page }) => {
 
 test("aba Quanto sobra calcula lucro com valores padrão", async ({ page }) => {
   await expect(page.locator("#tabForward")).toHaveClass(/active/);
-  await expect(page.locator("#profitValue")).toHaveText("R$ 6,74");
-  await expect(page.locator("#marginValue")).toHaveText("19,3%");
+  await expect(page.locator("#profitValue")).toHaveText("R$ 8,84");
+  await expect(page.locator("#marginValue")).toHaveText("25,3%");
   await expect(page.locator("#targetMargin")).toBeHidden();
   await expect(page.locator("#price")).toBeVisible();
 });
 
-test("trocar pra Shopee recalcula e esconde frete", async ({ page }) => {
+test("TikTok cobra só comissão + tarifa por item, sem linha de frete", async ({ page }) => {
+  await expect(page.locator("#breakdown")).toContainText("Comissão TikTok (10%)");
+  await expect(page.locator("#breakdown")).not.toContainText(/frete/i);
   await page.click("#btnShopee");
-  await expect(page.locator("#breakdown")).not.toContainText("Frete");
+  await expect(page.locator("#breakdown")).toContainText("Comissão Shopee (20%)");
   await expect(page.locator("#tierNote")).toContainText("20%");
+});
+
+// Exemplos oficiais de seller.tiktok.com/br/seller-fees
+for (const ex of [
+  { name: "camisa R$45 sem desconto", price: "45", commission: "R$ 4,50", fixed: "R$ 4,00", pctLabel: "10%" },
+  { name: "calça R$85 - R$10 de desconto = R$75", price: "75", commission: "R$ 4,50", fixed: "R$ 6,00", pctLabel: "6%" },
+]) {
+  test(`exemplo oficial TikTok na tela: ${ex.name}`, async ({ page }) => {
+    await page.fill("#price", ex.price);
+    const rows = page.locator("#breakdown tr");
+    await expect(rows.filter({ hasText: `Comissão TikTok (${ex.pctLabel})` })).toContainText(ex.commission);
+    await expect(rows.filter({ hasText: "Taxa fixa por item vendido" })).toContainText(ex.fixed);
+  });
+}
+
+test("preço avisa que é o valor já com desconto", async ({ page }) => {
+  await expect(page.locator("label.field", { has: page.locator("#price") })).toContainText("Valor já com desconto do vendedor");
+  await page.click("#tabReverse");
+  await expect(page.locator("#suggestedNote")).toContainText("já com desconto do vendedor");
 });
 
 test("aviso de margem baixa aparece só na aba Quanto sobra", async ({ page }) => {
@@ -39,7 +60,7 @@ test("aba Quanto cobrar sugere preço e mostra tabela de margens", async ({ page
   await page.click("#tabReverse");
   await expect(page.locator("#price")).toBeHidden();
   await expect(page.locator("#targetMargin")).toBeVisible();
-  await expect(page.locator("#suggestedPrice")).toHaveText("R$ 48,22");
+  await expect(page.locator("#suggestedPrice")).toHaveText("R$ 39,71");
   await expect(page.locator("#marginValue")).toHaveText("30%");
   const rows = page.locator("#marginRows tr");
   await expect(rows).toHaveCount(6);
@@ -59,7 +80,7 @@ test("desligar afiliado baixa o preço sugerido", async ({ page }) => {
   await page.click("#tabReverse");
   await page.uncheck("#useAffiliate");
   await expect(page.locator("#affiliatePct")).toBeDisabled();
-  await expect(page.locator("#suggestedPrice")).not.toHaveText("R$ 48,22");
+  await expect(page.locator("#suggestedPrice")).not.toHaveText("R$ 39,71");
 });
 
 test("inputs e aba ficam salvos após recarregar", async ({ page }) => {
@@ -77,7 +98,7 @@ test("inputs e aba ficam salvos após recarregar", async ({ page }) => {
 test("localStorage corrompido não quebra a página", async ({ page }) => {
   await page.evaluate(() => localStorage.setItem("calc-mktplace:v1", "{lixo"));
   await page.reload();
-  await expect(page.locator("#profitValue")).toHaveText("R$ 6,74");
+  await expect(page.locator("#profitValue")).toHaveText("R$ 8,84");
 });
 
 test("sem scroll horizontal", async ({ page }) => {
@@ -139,8 +160,8 @@ test.describe("gráfico de composição do preço", () => {
 
   test("fatias somam 100% e lucro bate com a margem", async ({ page }) => {
     await expect(page.locator("#donutLegend li")).toHaveCount(5);
-    await expect(page.locator("#donutCenter")).toHaveText("19,3%");
-    await expect(page.locator('#donutLegend li[data-slice="profit"] .v')).toHaveText("R$ 6,74");
+    await expect(page.locator("#donutCenter")).toHaveText("25,3%");
+    await expect(page.locator('#donutLegend li[data-slice="profit"] .v')).toHaveText("R$ 8,84");
     const total = (await sharesOf(page)).reduce((a, b) => a + b, 0);
     expect(Math.abs(total - 100)).toBeLessThan(0.5);
     await expect.poll(() => sliceCount(page)).toBe(5);

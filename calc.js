@@ -18,6 +18,9 @@
   ];
 
   const MARGIN_STEPS = [0.10, 0.20, 0.30, 0.40, 0.50, 0.60];
+  // Taxa de frete grátis do TikTok Shop: 6% do preço, com teto de R$50 por item.
+  const TIKTOK_FRETE_PCT = 0.06;
+  const TIKTOK_FRETE_CAP = 50;
 
   function tiersFor(platform) {
     return platform === "tiktok" ? TIKTOK_TIERS : SHOPEE_TIERS;
@@ -31,11 +34,12 @@
   function calcSale(platform, price, cost, affiliatePct, nfPct) {
     const tier = tierFor(price, tiersFor(platform));
     const commissionValue = price * tier.commission;
+    const freteValue = platform === "tiktok" ? Math.min(price * TIKTOK_FRETE_PCT, TIKTOK_FRETE_CAP) : 0;
     const affiliateValue = price * affiliatePct;
     const nfValue = price * nfPct;
-    const profit = price - cost - commissionValue - tier.fixed - affiliateValue - nfValue;
+    const profit = price - cost - commissionValue - tier.fixed - freteValue - affiliateValue - nfValue;
     return {
-      price, cost, tier, commissionValue, fixedValue: tier.fixed, affiliateValue, nfValue,
+      price, cost, tier, commissionValue, fixedValue: tier.fixed, freteValue, affiliateValue, nfValue,
       profit, margin: price > 0 ? profit / price : 0,
     };
   }
@@ -52,8 +56,21 @@
     let lo = 0;
     for (const tier of tiers) {
       const hi = tier.max;
-      const d = 1 - tier.commission - extra - target;
-      const p = d > 0 ? (cost + tier.fixed) / d : Infinity;
+      let p = Infinity;
+      if (platform === "tiktok") {
+        // Frete de 6% até o teto; acima de R$833,33 vira R$50 fixo.
+        const d6 = 1 - tier.commission - TIKTOK_FRETE_PCT - extra - target;
+        const p6 = d6 > 0 ? (cost + tier.fixed) / d6 : Infinity;
+        if (p6 <= TIKTOK_FRETE_CAP / TIKTOK_FRETE_PCT) {
+          p = p6;
+        } else {
+          const d50 = 1 - tier.commission - extra - target;
+          p = d50 > 0 ? (cost + tier.fixed + TIKTOK_FRETE_CAP) / d50 : Infinity;
+        }
+      } else {
+        const d = 1 - tier.commission - extra - target;
+        p = d > 0 ? (cost + tier.fixed) / d : Infinity;
+      }
       if (Number.isFinite(p)) {
         const candidate = Math.ceil(Math.max(p, lo) * 100 - 1e-6) / 100;
         if (candidate < hi && (best === null || candidate < best)) best = candidate;
@@ -68,7 +85,7 @@
   }
 
   const api = {
-    TIKTOK_TIERS, SHOPEE_TIERS, MARGIN_STEPS,
+    TIKTOK_TIERS, SHOPEE_TIERS, TIKTOK_FRETE_PCT, TIKTOK_FRETE_CAP, MARGIN_STEPS,
     tiersFor, tierFor, calcSale, solvePrice,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;

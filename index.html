@@ -370,6 +370,7 @@
     <ul>
       <li>Abaixo de R$50: 10% + R$4,00 fixo por item</li>
       <li>A partir de R$50: 6% + R$6,00 fixo por item</li>
+      <li>Taxa de frete grátis: 6% do preço (teto R$50)</li>
       <li>Calculado sobre o preço já com o desconto do vendedor</li>
     </ul>
     <p class="title">Shopee</p>
@@ -566,6 +567,9 @@
       { icon: "percent", label: `Comissão ${state.platform === "tiktok" ? "TikTok" : "Shopee"} (${pct(sale.tier.commission)})`, value: -sale.commissionValue },
       { icon: "percent", label: "Taxa fixa por item vendido", value: -sale.fixedValue },
     );
+    if (state.platform === "tiktok") {
+      rows.push({ icon: "truck", label: "Taxa de frete grátis TikTok (6%)", value: -sale.freteValue });
+    }
     rows.push({ icon: "users", label: "Comissão do afiliado", value: -sale.affiliateValue, muted: !affiliateCheck.checked });
     rows.push({ icon: "receipt", label: "Imposto da nota fiscal", value: -sale.nfValue, muted: !nfCheck.checked });
 
@@ -604,7 +608,7 @@
     const values = {
       profit: Math.max(sale.profit, 0),
       cost: sale.cost,
-      platform: sale.commissionValue + sale.fixedValue,
+      platform: sale.commissionValue + sale.fixedValue + sale.freteValue,
       affiliate: sale.affiliateValue,
       nf: sale.nfValue,
     };

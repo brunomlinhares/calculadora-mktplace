@@ -55,20 +55,30 @@ test("TikTok: faixa usa o preço já com desconto (R$55 - R$10 = R$45 cai em 10%
   assert.equal(tiktokFee(50), 9);
 });
 
-test("TikTok cobra só comissão + tarifa por item (sem taxa extra de frete)", () => {
+test("TikTok cobra comissão + tarifa por item + 6% de frete", () => {
   const s = calcSale("tiktok", 100, 0, 0, 0);
-  assert.equal(s.freteValue, undefined);
-  close(s.profit, 100 - 6 - 6);
+  close(s.freteValue, 6);
+  close(s.profit, 100 - 6 - 6 - 6);
+});
+
+test("frete do TikTok tem teto de R$50", () => {
+  assert.equal(calcSale("tiktok", 2000, 0, 0, 0).freteValue, 50);
+  close(calcSale("tiktok", 500, 0, 0, 0).freteValue, 30);
+});
+
+test("Shopee não cobra frete à parte", () => {
+  assert.equal(calcSale("shopee", 100, 0, 0, 0).freteValue, 0);
 });
 
 test("venda TikTok R$34,90 com custo 9,50, afiliado 20% e NF 6%", () => {
   const s = calcSale("tiktok", 34.9, 9.5, 0.2, 0.06);
   close(s.commissionValue, 3.49);
   assert.equal(s.fixedValue, 4);
+  close(s.freteValue, 2.094);
   close(s.affiliateValue, 6.98);
   close(s.nfValue, 2.094);
-  close(s.profit, 8.84);
-  close(s.margin, 0.253, 0.001);
+  close(s.profit, 6.74);
+  close(s.margin, 0.193, 0.001);
 });
 
 test("Shopee: R$100 cai em 14% + R$20", () => {
@@ -82,8 +92,8 @@ test("preço zero não gera margem NaN", () => {
 
 test("conta reversa: exemplo da UI (TikTok, 30%)", () => {
   const s = solvePrice("tiktok", 9.5, 0.2, 0.06, 0.3);
-  assert.equal(s.price, 39.71);
-  close(s.profit, 11.91);
+  assert.equal(s.price, 48.22);
+  close(s.profit, 14.47);
   assert.ok(s.margin >= 0.3);
   assert.equal(s.aboveTarget, false);
 });
@@ -122,8 +132,10 @@ test("conta reversa: preço sugerido nunca fica com margem abaixo do alvo", () =
   function table(p) { return p === "tiktok" ? TIKTOK_TIERS : SHOPEE_TIERS; }
 });
 
-test("conta reversa: preço alto no TikTok continua exato", () => {
+test("conta reversa: preço acima do teto de frete do TikTok", () => {
   const s = solvePrice("tiktok", 800, 0, 0, 0.3);
+  assert.ok(s.price > 50 / 0.06);
+  assert.equal(s.freteValue, 50);
   assert.ok(s.margin >= 0.3);
   assert.ok(calcSale("tiktok", s.price - 0.01, 800, 0, 0).margin < 0.3);
 });
